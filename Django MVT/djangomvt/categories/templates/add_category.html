@@ -1,0 +1,203 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block mystyles %}
+  <link href="{% static 'css/cropper.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+  <h1 class="text-center">Додати категорію</h1>
+  <div class="row">
+    <form class="col-md-6 offset-md-3 needs-validation" method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label for="name" class="form-label">Назва</label>
+        <input type="text" class="form-control" id="name" name="name" required />
+        <div class="valid-feedback">Looks good!</div>
+        <div class="invalid-feedback">Будь ласка, введіть назву категорії</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="image" class="form-label" style="cursor: pointer;">
+            <img src="/images/noimage.jpg" id="imgView" width="200" />
+        </label>
+        <input type="file" class="form-control d-none" id="image" accept="image/*" required name="image" />
+        <div class="invalid-feedback">Будь ласка, загрузіть картинку для категорії</div>
+      </div>
+
+      <div class="form-check mb-3">
+        <input type="checkbox" value="checked" class="form-check-input" id="is_active" name="is_active" />
+        <label for="is_active" class="form-label">Чи активна</label>
+      </div>
+
+      <div>
+        <label for="description" class="form-label">Опис</label>
+        <textarea name="description" id="description"></textarea>
+        <div class="invalid-feedback">Опис не може бути порожнім</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Додати</button>
+    </form>
+  </div>
+  <!-- Modal -->
+  <div class="modal" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Редагування фото</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div>
+            <img src="" id="imagePreview" width="100%" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" id="btnCroppedImage" class="btn btn-primary">Зберегти</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isActive = document.getElementById('is_active')
+    isActive.checked = true
+  </script>
+{% endblock %}
+{% block scripts %}
+
+ <script src="{% static 'js/cropper.js' %}"></script>
+ <script src="https://cdn.tiny.cloud/1/vvjvo7kl3d6bh5xriji4khj5vcgeynj3hvajabce6xamq664/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+  
+    <script>
+    tinymce.init({
+      selector: 'textarea',
+      plugins: [
+        // Core editing features
+        'anchor',
+        'autolink',
+        'charmap',
+        'codesample',
+        'emoticons',
+        'link',
+        'lists',
+        'media',
+        'searchreplace',
+        'table',
+        'visualblocks',
+        'wordcount',
+        // Your account includes a free trial of TinyMCE premium features
+        // Try the most popular premium features until Dec 19, 2025:
+        'checklist',
+        'mediaembed',
+        'casechange',
+        'formatpainter',
+        'pageembed',
+        'a11ychecker',
+        'tinymcespellchecker',
+        'permanentpen',
+        'powerpaste',
+        'advtable',
+        'advcode',
+        'advtemplate',
+        'ai',
+        'uploadcare',
+        'mentions',
+        'tinycomments',
+        'tableofcontents',
+        'footnotes',
+        'mergetags',
+        'autocorrect',
+        'typography',
+        'inlinecss',
+        'markdown',
+        'importword',
+        'exportword',
+        'exportpdf'
+      ],
+      toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+      tinycomments_mode: 'embedded',
+      tinycomments_author: 'Author name',
+      mergetags_list: [
+        { value: 'First.Name', title: 'First Name' },
+        { value: 'Email', title: 'Email' }
+      ],
+      ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
+      uploadcare_public_key: 'eadf712b9c2e6cb05c3d'
+    })
+  </script>
+
+
+ <script>
+    window.addEventListener('load', () => {
+      var cropper
+      const exampleModal = new bootstrap.Modal('#exampleModal')
+    
+      image.addEventListener('change', (e) => {
+        const files = e.target.files
+        if (files) {
+          const file = files[0]
+          if (file) {
+            imagePreview.src = URL.createObjectURL(file)
+            exampleModal.show()
+          }
+        }
+      })
+    
+      document.getElementById('exampleModal').addEventListener('shown.bs.modal', (event) => {
+        cropper = new Cropper(imagePreview, { autoCropArea: 0.5 })
+      })
+    
+      document.getElementById('exampleModal').addEventListener('hidden.bs.modal', (evemt) => {
+        cropper.destroy()
+      })
+    
+      btnCroppedImage.addEventListener('click', () => {
+        var base64 = cropper.getCroppedCanvas().toDataURL();
+        imgView.src = base64;
+        var croppedImage = cropper.getCroppedCanvas().toBlob(function (blob) {
+          const uniqueFileName = crypto.randomUUID() + '.png'
+          const file = new File([blob], uniqueFileName, { type: 'image/png' })
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(file)
+          image.files = dataTransfer.files
+          
+        })
+        exampleModal.hide()
+      })
+    
+      const imagePreview = document.getElementById('imagePreview')
+    })
+  </script>
+ 
+
+  <script>
+  // Example starter JavaScript for disabling form submissions if there are invalid fields
+(function () {
+  'use strict'
+
+  // Fetch all the forms we want to apply custom Bootstrap validation styles to
+  var forms = document.querySelectorAll('.needs-validation')
+
+  // Loop over them and prevent submission
+  Array.prototype.slice.call(forms)
+    .forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+       
+
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        else {
+            console.log("Submit form");
+        }
+
+         form.classList.add('was-validated');
+      }, false)
+    })
+})()
+  </script>
+{% endblock %}
